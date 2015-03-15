@@ -1,12 +1,13 @@
-
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class Index {
 	//valid java variables start with letters, numbers, '$' or '_'
 	final static int start = '$';
 	final static int end = 'z';
-	final static int range = end-start+1;
-	Node[] tries = new Node[range];
+	final static int size = end-start+1;
+	Node[] tries = new Node[size];
 	
 	//TODO: merge processing logic with addhelper
 	void add(String n, int s){
@@ -55,10 +56,11 @@ public class Index {
 		return searchHelper(s.substring(1),n.children[firstLetter-start]);
 	}
 	
+	
 	class Node {
 		final static int maxranksize = 10;
 		char letter;
-		Node[] children = new Node[range];
+		Node[] children = new Node[size];
 		Datum[] ranking = new Datum[maxranksize]; //max to min ranking
 		
 		public Node(char l) {
@@ -71,22 +73,27 @@ public class Index {
 		}
 		
 		void addtoRank(Datum d) {
-			for (int i=0; i<ranking.length; i++) {
-				if (ranking[i] == null) {
-					ranking[i] = d;
+			insertToArray(d, ranking);
+		}
+		
+		<T extends Comparable<T>> void insertToArray(T item, T[] array) {
+			for (int i=0; i< array.length; i++) {
+				if (array[i] == null) {
+					array[i] = item;
 					break;
 				}
-				else if (d.compareTo(ranking[i]) >= 1) {
-					for (int j=ranking.length-1; j>i; j--) {
-						ranking[j] = ranking[j-1];
+				else if (item.compareTo(array[i]) >= 1) {
+					for (int j=array.length-1; j>i; j--) {
+						array[j] = array[j-1];
 					}
-					ranking[i]= d;
+					array[i]= item;
 					break;
 				}
 			}
 		}
 	}
 	
+
 	
 	class Datum implements Comparable<Datum>{
 		String name;
