@@ -42,5 +42,24 @@ public class IndexTester {
 		i.add("xy",550);
 		assertEquals("[aa:1005,ab:1004,aa:1003,ab:1002,aa:1001,a:1000,ab:500,a:123,aa:100,aa:5]",i.search("a"));
 	}
+	
+	@Test
+	public void basicUnderscoreTest() {
+		Index i = new Index();
+		i.add("a",0);
+		i.add("_a", 1);
+		i.add("_aa", 2);
+		i.add("__ab",3);
+		i.add("__aaa", 4);
+		i.add("___aab",5);
+		i.add("___ba", 6);
+		i.add("___bb", 7);
+		assertEquals("[___aab:5,__aaa:4,__ab:3,_aa:2,_a:1,a:0]",i.search("a"));
+		assertEquals("[___aab:5,__aaa:4,__ab:3,_aa:2,_a:1]",i.search("_a"));
+		assertEquals("[___aab:5,__aaa:4,__ab:3]",i.search("__a"));
+		assertEquals("[___aab:5]",i.search("___a"));
+		assertEquals("[___aab:5,__aaa:4]",i.search("__aa"));
+		System.out.println(i.search("a"));
+	}
 
 }
