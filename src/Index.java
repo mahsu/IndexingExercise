@@ -1,12 +1,16 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class Index{
+/** An instance of Index represents an indexed list of name, score pairs*/
+public class Index implements Serializable{
+
+	private static final long serialVersionUID = -4302167588789784267L;
 	//valid java variables start with letters, numbers, '$' or '_'
 	final static int start = '$'; //first possible char
 	final static int end = 'z'; //last possible char
 	final static int char_space = end-start+1; //size of array of character space
-	Node[] tries = new Node[char_space]; //each element corresponds to a first letter
-	int size = 0; //size of the index
+	private Node[] tries = new Node[char_space]; //each element corresponds to a first letter
+	public int size = 0; //size of the index
 
 	/**
 	 * add string n with score s
@@ -33,37 +37,6 @@ public class Index{
 			}
 			addhelper(stripped.substring(1), d, tries[ind], undersCount);
 		}
-	}
-	
-	/**
-	 * counts the occurrences of a prefix p in string s
-	 * @param p prefix
-	 * @param s string
-	 * @return
-	 */
-	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
-	public static int countPrefix(char p, String s){
-		int count = 0;
-		for (char d : s.toCharArray() ){
-			if (d == p) count++;
-			else break;
-		}
-		return count;
-	}
-	
-	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
-	/**
-	 * strips the prefix containing all letters p in string s
-	 * @param p prefix
-	 * @param s string to search in
-	 * @return
-	 */
-	public static String stripPrefix(char p, String s) {
-		int length = 0;
-		while (length < s.length() && s.charAt(length) == p) {
-		    length++;
-		}
-		return s.substring(length);
 	}
 	
 	/**
@@ -129,18 +102,6 @@ public class Index{
 		return n.getRank(undersCount);
 	}
 	
-	public String searchToString(String s) {
-		Datum[] result = search(s);
-		if (result == null) return "[]";
-		
-		String toreturn = result[0] + "";
-		for(int i=1; i<result.length; i++){
-			if (result[i] != null)
-				toreturn += "," +result[i].toString();
-		}
-		return "[" + toreturn + "]";
-	}
-	
 	/**
 	 * recursive body of search
 	 * @param s substring to search
@@ -154,8 +115,59 @@ public class Index{
 		return searchHelper(s.substring(1),n.children[firstLetter-start]);
 	}
 	
+	/**
+	 * search the index for a string s and return the result as a string
+	 * @param s string to search
+	 * @return
+	 */
+	public String searchToString(String s) {
+		Datum[] result = search(s);
+		if (result == null) return "[]";
+		
+		String toreturn = result[0] + "";
+		for(int i=1; i<result.length; i++){
+			if (result[i] != null)
+				toreturn += "," +result[i].toString();
+		}
+		return "[" + toreturn + "]";
+	}
+	
+	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
+	/**
+	 * counts the occurrences of a prefix p in string s
+	 * @param p prefix
+	 * @param s string
+	 * @return
+	 */
+	public static int countPrefix(char p, String s){
+		int count = 0;
+		for (char d : s.toCharArray() ){
+			if (d == p) count++;
+			else break;
+		}
+		return count;
+	}
+	
+	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
+	/**
+	 * strips the prefix containing all letters p in string s
+	 * @param p prefix
+	 * @param s string to search in
+	 * @return
+	 */
+	public static String stripPrefix(char p, String s) {
+		int length = 0;
+		while (length < s.length() && s.charAt(length) == p) {
+		    length++;
+		}
+		return s.substring(length);
+	}
+	
+	
 	/** An instance of Node represents a node in the trie corresponding to the first letter**/
-	class Node {
+	class Node implements Serializable{
+
+		private static final long serialVersionUID = -5309925796811559500L;
 		int _visitedBy = -1; //last string that visited the node
 		int _visitedUnders = -1; //last number of underscores of string that visited node
 		final static int maxranksize = 10; //max top score count
@@ -163,10 +175,14 @@ public class Index{
 		Node[] children = new Node[char_space];
 		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>(); //max # of prefix underscores, not known ahead of time
 		
+		public Node(char l) {
+			letter = l;
+		}
+		
 		/**
-		 * Determines if a node has been visited with current index size and underscore count
-		 * compare size with internal _visitedBy and _visitedUnders
-		 * if false, reset the underscore count
+		 * Determines if a node has been visited with current index size and underscore count.
+		 * compare size with internal _visitedBy and _visitedUnders.
+		 * if false, reset the underscore count.
 		 * @param lastvisited
 		 * @param unders
 		 * @return
@@ -181,13 +197,14 @@ public class Index{
 			return false;
 		}
 		
+		/**
+		 * Visit a node
+		 * @param lastvisited last visited by
+		 * @param unders number of underscores of last visitor
+		 */
 		public void visit(int lastvisited, int unders) {
 			_visitedBy = lastvisited;
 			_visitedUnders = unders;
-		}
-		
-		public Node(char l) {
-			letter = l;
 		}
 		
 		/**
@@ -222,9 +239,8 @@ public class Index{
 						insertToArray(d, ranking);
 						underscores.add(i,ranking);
 					}	
-						i++;
+					i++;
 				}
-				
 			}
 		
 		/**
@@ -239,7 +255,6 @@ public class Index{
 			catch (IndexOutOfBoundsException e){
 				return null;
 			}
-
 		}
 		
 		/**
@@ -262,28 +277,6 @@ public class Index{
 					break;
 				}
 			}
-		}
-	}
-	
-	/** an instance of Datum represents a name, score pair*/
-	class Datum implements Comparable<Datum>{
-		String name;
-		int score;
-		
-		public Datum(String n, int s) {
-			name = n;
-			score = s;
-		}
-		
-		@Override
-		public int compareTo(Datum d) {
-			//lower score < higher score (also from some stackoverflow)
-			return (score < d.score) ? -1 : (score == d.score) ? 0 : 1;
-		}
-		
-		@Override
-		public String toString() {
-			return name+ ":" +score;
 		}
 	}
 }
