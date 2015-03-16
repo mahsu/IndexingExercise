@@ -1,5 +1,7 @@
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
+
 import org.junit.Test;
 
 
@@ -20,7 +22,6 @@ public class IndexTester {
 		assertEquals("[]", i.search("z"));
 		assertEquals("[]", i.search(""));
 		assertEquals("[]", i.search(null));
-		System.out.println(i.search("z"));
 	}
 	
 	@Test
@@ -60,6 +61,29 @@ public class IndexTester {
 		assertEquals("[___aab:5]",i.search("___a"));
 		assertEquals("[___aab:5,__aaa:4]",i.search("__aa"));
 		System.out.println(i.search("a"));
+	}
+	
+	@Test
+	public void stringCreationTest() {
+		assertEquals("[abc]", Arrays.toString(Index.generateStrings('_',"abc")));
+		assertEquals("[a__, _]", Arrays.toString(Index.generateStrings('_',"a__")));
+		assertEquals("[__abc___bcd_cde, __bcd_cde, cde]", Arrays.toString(Index.generateStrings('_',"__abc___bcd_cde")));
+		System.out.println(Arrays.toString(Index.generateStrings('_',"rev_rev__rev_year")));
+	}
+	
+	@Test
+	public void advUnderscoreTest() {
+		Index i = new Index();
+		i.add("revenue", 1);
+		i.add("yearly_revenue", 10);
+		assertEquals("[yearly_revenue:10,revenue:1]",i.search("rev"));
+		assertEquals("[]", i.search("_rev"));
+		
+		i.add("_revv", 20);
+		i.add("rev_rev__rev_year",30);
+		assertEquals("[rev_rev__rev_year:30,_revv:20,yearly_revenue:10,revenue:1]",i.search("rev"));
+		assertEquals("[rev_rev__rev_year:30,yearly_revenue:10]",i.search("year"));
+		
 	}
 
 }

@@ -1,29 +1,32 @@
 import java.util.ArrayList;
-import java.util.List;
 
-
-public class Index {
+public class Index{
 	//valid java variables start with letters, numbers, '$' or '_'
-	final static int start = '$';
-	final static int end = 'z';
-	final static int size = end-start+1;
-	Node[] tries = new Node[size];
-	
-	//TODO: merge processing logic with addhelper
+	final static int start = '$'; //first possible char
+	final static int end = 'z'; //last possible char
+	final static int char_space = end-start+1; //size of array
+	Node[] tries = new Node[char_space]; //each element corresponds to a first letter
+	int size = 0;
+
 	void add(String n, int s){
 		Datum d = new Datum(n,s);
 		
-		/* begin: same as logic in addhelper but did not merge due to different variables*/
-		int undersCount = countPrefix('_', n);
-		String stripped = stripPrefix('_',n);
-		int firstLetter = stripped.charAt(0);
-		int ind = firstLetter-start;
-		if (tries[ind] == null) {
-			tries[ind] = new Node((char)firstLetter); 
+		String[] strings = generateStrings('_',n);
+		size++; //started inserting a new string
+		for (int i=0; i<strings.length; i++){
+			int undersCount = countPrefix('_', strings[i]);
+			String stripped = stripPrefix('_',strings[i]);
+			int firstLetter = stripped.charAt(0);
+			int ind = firstLetter-start;
+			if (tries[ind] == null) {
+				tries[ind] = new Node((char)firstLetter); 
+			}
+			if (tries[ind].visitedBy != size) {
+				tries[ind].addtoRank(d,undersCount);
+				tries[ind].visitedBy = size;
+			}
+			addhelper(stripped.substring(1), d, tries[ind], undersCount);
 		}
-		tries[ind].addtoRank(d,undersCount);
-		addhelper(stripped.substring(1), d, tries[ind], undersCount);
-		/*end: same*/
 	}
 	
 	/**
@@ -32,7 +35,8 @@ public class Index {
 	 * @param s
 	 * @return
 	 */
-	private int countPrefix(char p, String s){
+	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
+	public static int countPrefix(char p, String s){
 		int count = 0;
 		for (char d : s.toCharArray() ){
 			if (d == p) count++;
@@ -41,15 +45,40 @@ public class Index {
 		return count;
 	}
 	
-	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim*/
-	private String stripPrefix(char p, String s) {
+	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
+	/**
+	 * strips the prefix containing all letters p of a string s
+	 * @param p
+	 * @param s
+	 * @return
+	 */
+	public static String stripPrefix(char p, String s) {
 		int length = 0;
 		while (length < s.length() && s.charAt(length) == p) {
 		    length++;
 		}
 		return s.substring(length);
 	}
+	
+	/**
+	 * Pre-generate a list of strings based on delimeter
+	 * @return
+	 */
+	public static String[] generateStrings(char delim, String s) {
+		//todo: maybe optimize for strings that dont have delim
+		ArrayList<String> list = new ArrayList<String>();
+		int nextUnders = 0;
+		do {
+			list.add(s);
+			s = stripPrefix('_', s);
+			nextUnders = s.indexOf("_");
+			s = s.substring(nextUnders+1); //NOTE: should have +1 if search is first '_' exclusive
+		}
+		while (nextUnders !=-1);
 		
+		String[] strings = new String[list.size()];
+		return list.toArray(strings);
+	}
 	
 	private void addhelper(String s, Datum d, Node n, int undersCount){
 		if (s.equals("")) return;
@@ -58,7 +87,10 @@ public class Index {
 		if (n.children[ind] == null){
 			n.children[ind] = new Node((char)firstLetter);
 		}
-		n.children[ind].addtoRank(d, undersCount);
+		if (n.children[ind].visitedBy != size) {
+			n.children[ind].addtoRank(d, undersCount);
+			n.children[ind].visitedBy = size;
+		}
 		addhelper(s.substring(1),d, n.children[ind], undersCount);
 		
 	}
@@ -95,11 +127,11 @@ public class Index {
 	
 	/** An instance of Node represents a node in the trie corresponding to the first letter**/
 	class Node {
+		int visitedBy = -1;
 		final static int maxranksize = 10;
 		char letter;
-		Node[] children = new Node[size];
-		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>();
-		//Datum[] ranking = new Datum[maxranksize]; //max to min ranking
+		Node[] children = new Node[char_space];
+		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>(); //max # of underscores not known ahead of time
 		
 		public Node(char l) {
 			letter = l;
@@ -112,7 +144,7 @@ public class Index {
 		
 		void addtoRank(Datum d, int undersCount) {
 			int i=0;	
-			//switch to plain while
+			//todo: switch to plain while
 			do{
 					Datum[] ranking = null;
 					try {
@@ -134,7 +166,7 @@ public class Index {
 			try {
 				return underscores.get(undersCount);
 			}
-			catch (ArrayIndexOutOfBoundsException e){
+			catch (IndexOutOfBoundsException e){
 				return null;
 			}
 
@@ -163,8 +195,7 @@ public class Index {
 		}
 	}
 	
-
-	
+	/** an instance of Datum represents a name, score pair*/
 	class Datum implements Comparable<Datum>{
 		String name;
 		int score;
@@ -176,7 +207,7 @@ public class Index {
 		
 		@Override
 		public int compareTo(Datum d) {
-			//lower score < higher score
+			//lower score < higher score (also from some stackoverflow)
 			return (score < d.score) ? -1 : (score == d.score) ? 0 : 1;
 		}
 		
