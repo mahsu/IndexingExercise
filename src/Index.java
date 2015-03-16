@@ -4,26 +4,32 @@ public class Index{
 	//valid java variables start with letters, numbers, '$' or '_'
 	final static int start = '$'; //first possible char
 	final static int end = 'z'; //last possible char
-	final static int char_space = end-start+1; //size of array
+	final static int char_space = end-start+1; //size of array of character space
 	Node[] tries = new Node[char_space]; //each element corresponds to a first letter
-	int size = 0;
+	int size = 0; //size of the index
 
+	/**
+	 * add string n with score s
+	 * @param n name
+	 * @param s score
+	 */
 	void add(String n, int s){
 		Datum d = new Datum(n,s);
 		
 		String[] strings = generateStrings('_',n);
 		size++; //started inserting a new string
 		for (int i=0; i<strings.length; i++){
+			//had trouble merging this with the recursive helper w/o adding another param 
 			int undersCount = countPrefix('_', strings[i]);
 			String stripped = stripPrefix('_',strings[i]);
 			int firstLetter = stripped.charAt(0);
 			int ind = firstLetter-start;
 			if (tries[ind] == null) {
-				tries[ind] = new Node((char)firstLetter); 
+				tries[ind] = new Node((char)firstLetter);
 			}
-			if (tries[ind].visitedBy != size) {
+			if (!tries[ind].isVisited(size, undersCount)) { //make sure no duplicates are inserted
 				tries[ind].addtoRank(d,undersCount);
-				tries[ind].visitedBy = size;
+				tries[ind].visit(size, undersCount); //update the latest visit
 			}
 			addhelper(stripped.substring(1), d, tries[ind], undersCount);
 		}
@@ -31,8 +37,8 @@ public class Index{
 	
 	/**
 	 * counts the occurrences of a prefix p in string s
-	 * @param p
-	 * @param s
+	 * @param p prefix
+	 * @param s string
 	 * @return
 	 */
 	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
@@ -47,9 +53,9 @@ public class Index{
 	
 	/* modified from http://stackoverflow.com/questions/6179192/how-to-get-all-the-occurrence-character-on-the-prefix-of-string-in-java-in-a-sim */
 	/**
-	 * strips the prefix containing all letters p of a string s
-	 * @param p
-	 * @param s
+	 * strips the prefix containing all letters p in string s
+	 * @param p prefix
+	 * @param s string to search in
 	 * @return
 	 */
 	public static String stripPrefix(char p, String s) {
@@ -61,7 +67,10 @@ public class Index{
 	}
 	
 	/**
-	 * Pre-generate a list of strings based on delimeter
+	 * Pre-generate a list of substrings based on delimeter
+	 * excludes first occurrence of delimeter in each substring
+	 * @param delim delimeter
+	 * @param s string to generate from
 	 * @return
 	 */
 	public static String[] generateStrings(char delim, String s) {
@@ -80,6 +89,13 @@ public class Index{
 		return list.toArray(strings);
 	}
 	
+	/**
+	 * recursive body of add
+	 * @param s substring to add
+	 * @param d datum pair to add
+	 * @param n current node
+	 * @param undersCount number of underscores of datum
+	 */
 	private void addhelper(String s, Datum d, Node n, int undersCount){
 		if (s.equals("")) return;
 		int firstLetter = s.charAt(0);
@@ -87,25 +103,34 @@ public class Index{
 		if (n.children[ind] == null){
 			n.children[ind] = new Node((char)firstLetter);
 		}
-		if (n.children[ind].visitedBy != size) {
+		if (!n.children[ind].isVisited(size,undersCount)) {
 			n.children[ind].addtoRank(d, undersCount);
-			n.children[ind].visitedBy = size;
+			n.children[ind].visit(size,undersCount);
 		}
 		addhelper(s.substring(1),d, n.children[ind], undersCount);
 		
 	}
-	//s is not null
-	public String search(String s){
-		if (s == null || s.equals("")) return "[]";
+	
+	/**
+	 * search the index for string s
+	 * @param s string to search
+	 * @return
+	 */
+	public Datum[] search(String s){
+		if (s == null || s.equals("")) return null;
 		String stripped = stripPrefix('_',s);
 		int firstLetter = stripped.charAt(0);
 		Node root = tries[firstLetter-start];
-		if (root == null) return "[]";
+		if (root == null) return null;
 		
 		int undersCount = countPrefix('_', s);
 		
 		Node n = searchHelper(stripped.substring(1),root);
-		Datum[] result = n.getRank(undersCount);
+		return n.getRank(undersCount);
+	}
+	
+	public String searchToString(String s) {
+		Datum[] result = search(s);
 		if (result == null) return "[]";
 		
 		String toreturn = result[0] + "";
@@ -116,8 +141,12 @@ public class Index{
 		return "[" + toreturn + "]";
 	}
 	
-	
-	
+	/**
+	 * recursive body of search
+	 * @param s substring to search
+	 * @param n current node being traversed
+	 * @return
+	 */
 	private Node searchHelper(String s, Node n){
 		if (n == null) return null;
 		if (s.equals("")) return n;
@@ -127,26 +156,62 @@ public class Index{
 	
 	/** An instance of Node represents a node in the trie corresponding to the first letter**/
 	class Node {
-		int visitedBy = -1;
-		final static int maxranksize = 10;
-		char letter;
+		int _visitedBy = -1; //last string that visited the node
+		int _visitedUnders = -1; //last number of underscores of string that visited node
+		final static int maxranksize = 10; //max top score count
+		char letter; //letter represented by node
 		Node[] children = new Node[char_space];
-		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>(); //max # of underscores not known ahead of time
+		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>(); //max # of prefix underscores, not known ahead of time
+		
+		/**
+		 * Determines if a node has been visited with current index size and underscore count
+		 * compare size with internal _visitedBy and _visitedUnders
+		 * if false, reset the underscore count
+		 * @param lastvisited
+		 * @param unders
+		 * @return
+		 */
+		public boolean isVisited(int lastvisited, int unders) {
+			if (lastvisited == _visitedBy) {
+				if (unders <= _visitedUnders)
+					return true;
+				else return false;
+			}
+			_visitedUnders = -1;
+			return false;
+		}
+		
+		public void visit(int lastvisited, int unders) {
+			_visitedBy = lastvisited;
+			_visitedUnders = unders;
+		}
 		
 		public Node(char l) {
 			letter = l;
 		}
 		
-		public Node(char l, Datum d, int undersCount){
-			letter = l;
-			addtoRank(d, undersCount);
-		}
-		
+		/**
+		 * add datum d to current node's ranking corresponding to underscoreCount.
+		 * Start from 0 underscores to undersCount (inclusive)
+		 * @param d data point
+		 * @param undersCount number of underscores
+		 */
 		void addtoRank(Datum d, int undersCount) {
-			int i=0;	
-			//todo: switch to plain while
-			do{
+			if (_visitedUnders == -1)
+				addtoRank(d, undersCount, 0);
+			else if (undersCount > _visitedUnders)
+				addtoRank(d, undersCount, undersCount-_visitedUnders);
+		}
+		/**
+		 * add datum d to current node's ranking corresponding to underscoreCount
+		 * @param d data point
+		 * @param undersCount number of underscores
+		 */
+		void addtoRank(Datum d, int undersCount, int startInd) {
+			int i=startInd;	
+			while (i <= undersCount){
 					Datum[] ranking = null;
+					//since working with an arraylist, need to add if out of bounds, otherwise get
 					try {
 						ranking = underscores.get(i);
 						insertToArray(d, ranking);
@@ -159,9 +224,14 @@ public class Index{
 					}	
 						i++;
 				}
-				while (i <= undersCount);
+				
 			}
 		
+		/**
+		 * get the rank corresponding to number of underscores.
+		 * @param undersCount number of underscores
+		 * @return
+		 */
 		Datum[] getRank(int undersCount) {
 			try {
 				return underscores.get(undersCount);
@@ -173,7 +243,7 @@ public class Index{
 		}
 		
 		/**
-		 * Insert an item into an array (from big to small), shifting elements to the right
+		 * Insert an item into an array (from big to small), shifting elements to the right.
 		 * Last element is shifted out
 		 * @param item
 		 * @param array
