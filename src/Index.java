@@ -10,7 +10,6 @@ public class Index implements Serializable {
 	final static int end = 'z'; // last possible char
 	final static int char_space = end - start + 1; // size of array of character space
 	private Node root = new Node();
-	private Node[] tries = new Node[char_space]; // each element corresponds to a first letter
 	public int size = 0; // size of the index
 
 	/**
@@ -27,20 +26,11 @@ public class Index implements Serializable {
 		String[] strings = generateStrings('_', n);
 		size++; // started inserting a new string
 		for (int i = 0; i < strings.length; i++) {
-			// todo: index root should be a node so this can be combined
+
 			int undersCount = countPrefix('_', strings[i]);
 			String stripped = stripPrefix('_', strings[i]);
-			int firstLetter = stripped.charAt(0);
-			int ind = firstLetter - start;
-			if (tries[ind] == null) {
-				tries[ind] = new Node((char) firstLetter);
-			}
-			//make sure no duplicates inserted
-			if (!tries[ind].isVisited(size, undersCount)) {
-				tries[ind].addtoRank(d, undersCount);
-				tries[ind].visit(size, undersCount); // update the latest visit
-			}
-			addhelper(stripped.substring(1), d, tries[ind], undersCount);
+
+			addhelper(stripped, d, root, undersCount);
 		}
 	}
 
@@ -61,9 +51,12 @@ public class Index implements Serializable {
 			return;
 		int firstLetter = s.charAt(0);
 		int ind = firstLetter - start;
+		//check that a node exists at position
 		if (n.children[ind] == null) {
 			n.children[ind] = new Node((char) firstLetter);
 		}
+		
+		//make sure node was not already visited by string set
 		if (!n.children[ind].isVisited(size, undersCount)) {
 			n.children[ind].addtoRank(d, undersCount);
 			n.children[ind].visit(size, undersCount);
@@ -83,18 +76,14 @@ public class Index implements Serializable {
 		if (s == null || s.equals(""))
 			return null;
 		String stripped = stripPrefix('_', s);
-		int firstLetter = stripped.charAt(0);
-		Node root = tries[firstLetter - start];
-		if (root == null)
-			return null;
-
 		int undersCount = countPrefix('_', s);
 
-		Node n = searchHelper(stripped.substring(1), root);
+		Node n = searchHelper(stripped, root);
 		if (n == null) {
 			return null;
-		} else
+		} else {
 			return n.getRank(undersCount);
+		}
 	}
 
 	/**
@@ -302,13 +291,14 @@ public class Index implements Serializable {
 		 *            data point
 		 * @param undersCount
 		 *            number of underscores
+		 * @param startInd
+		 * 			  first index to add d to rank
 		 */
 		void addtoRank(Datum d, int undersCount, int startInd) {
 			int i = startInd;
 			while (i <= undersCount) {
 				Datum[] ranking = null;
-				// since working with an arraylist, need to add if out of
-				// bounds, otherwise get
+				// since working with an arraylist, need to add if out of bounds, otherwise get
 				try {
 					ranking = underscores.get(i);
 					insertToArray(d, ranking);

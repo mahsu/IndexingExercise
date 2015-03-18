@@ -11,6 +11,7 @@ public class IndexConstructor {
 
 		try {
 			i = RandomIndexGenerator.makeRandomIndex();
+			System.out.println("Saving serialized index in " + args[0] + "...");
 			FileOutputStream fileOut = new FileOutputStream(args[0]);
 			ObjectOutputStream out = new ObjectOutputStream(fileOut);
 			out.writeObject(i);

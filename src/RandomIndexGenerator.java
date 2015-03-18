@@ -57,8 +57,8 @@ public class RandomIndexGenerator {
 	 * @return
 	 */
 	public static int randomScore() {
-		int max = Integer.MAX_VALUE;
-		int min = Integer.MIN_VALUE;
+		int max = (int) 1e6;
+		int min = (int) -1e6;
 		return r.nextInt(max - min) + min;
 	}
 

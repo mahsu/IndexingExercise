@@ -11,6 +11,7 @@ public class QueryServer {
 		Index i = null;
 		try {
 			System.out.println("Reading serialized index...");
+			System.out.println("This will take a while.");
 			FileInputStream fileIn = new FileInputStream(args[0]);
 			ObjectInputStream in = new ObjectInputStream(fileIn);
 			i = (Index) in.readObject();
