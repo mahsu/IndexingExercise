@@ -2,6 +2,7 @@ import java.io.Serializable;
 
 /** an instance of Datum represents a name, score pair */
 class Datum implements Comparable<Datum>, Serializable {
+
 	private static final long serialVersionUID = -1319893657251638772L;
 	String name;
 	int score;
