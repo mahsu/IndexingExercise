@@ -214,11 +214,11 @@ public class Index implements Serializable {
 	class Node implements Serializable {
 
 		private static final long serialVersionUID = -5309925796811559500L;
-		int _visitedBy = -1; // last string that visited the node
-		int _visitedUnders = -1; // last number of underscores of string that
+		transient int _visitedBy = -1; // last string that visited the node
+		transient int _visitedUnders = -1; // last number of underscores of string that
 									// visited node
 		final static int maxranksize = 10; // max top score count
-		char letter; // letter represented by node
+		transient char letter; // letter represented by node
 		Node[] children = new Node[char_space];
 		//max # of prefix underscores, max size not known ahead of time
 		ArrayList<Datum[]> underscores = new ArrayList<Datum[]>(); 
